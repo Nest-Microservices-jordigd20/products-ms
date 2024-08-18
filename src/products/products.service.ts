@@ -61,10 +61,12 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
       throw new BadRequestException('No data provided');
     }
 
+    const { id: __, ...data } = updateProductDto;
+
     try {
       const updatedProduct = await this.product.update({
         where: { id },
-        data: updateProductDto
+        data
       });
 
       return updatedProduct;
