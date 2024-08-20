@@ -34,5 +34,8 @@ coverage
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Sqlite
+prisma/dev.db*
+
 # Environment
 .env
