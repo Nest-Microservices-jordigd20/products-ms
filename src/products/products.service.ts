@@ -1,12 +1,12 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PaginationDto } from '../common/pagination.dto';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class ProductsService extends PrismaClient implements OnModuleInit {
-
   private readonly logger = new Logger(ProductsService.name);
 
   async onModuleInit() {
@@ -14,10 +14,16 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     this.logger.log('Database connected');
   }
 
-  create(createProductDto: CreateProductDto) {
-    return this.product.create({
-      data: createProductDto
-    });
+  async create(createProductDto: CreateProductDto) {
+    try {
+      const product = await this.product.create({
+        data: createProductDto
+      });
+
+      return product;
+    } catch (error) {
+      this.handleDBError(error);
+    }
   }
 
   async findAll(paginationDto: PaginationDto) {
@@ -40,7 +46,7 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
         totalPages,
         lastPage
       }
-    }
+    };
   }
 
   async findOne(id: number) {
@@ -49,19 +55,24 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
     });
 
     if (!product) {
-      throw new NotFoundException(`Product #${id} not found`);
+      throw new RpcException({
+        message: `Product #${id} not found`,
+        status: HttpStatus.NOT_FOUND
+      });
     }
 
     return product;
   }
 
   async update(id: number, updateProductDto: UpdateProductDto) {
-
-    if (Object.keys(updateProductDto).length === 0) {
-      throw new BadRequestException('No data provided');
-    }
-
     const { id: __, ...data } = updateProductDto;
+
+    if (Object.keys(data).length === 0) {
+      throw new RpcException({
+        message: 'No data provided',
+        status: HttpStatus.BAD_REQUEST
+      });
+    }
 
     try {
       const updatedProduct = await this.product.update({
@@ -93,13 +104,17 @@ export class ProductsService extends PrismaClient implements OnModuleInit {
   handleDBError(error: any) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {
-        throw new BadRequestException('Invalid data provided');
+        throw new RpcException({
+          message: 'Invalid data provided',
+          status: HttpStatus.BAD_REQUEST
+        });
       }
     }
 
     console.log(error);
-    throw new InternalServerErrorException('Check server logs for more info');
+    throw new RpcException({
+      message: 'Internal server error',
+      status: HttpStatus.INTERNAL_SERVER_ERROR
+    });
   }
-
-
 }
