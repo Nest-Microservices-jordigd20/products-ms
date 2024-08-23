@@ -19,7 +19,7 @@ const { error, value } = envSchema.validate({
 });
 
 if (error) {
-  throw new Error(`Config validation error: \${error.message}`);
+  throw new Error(`Config validation error: ${error.message}`);
 }
 
 const envVars: EnvVars = value;
