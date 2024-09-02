@@ -9,6 +9,14 @@
 4. Synchronize the database with prisma `npx prisma migrate dev`
 5. Run the application
 
+
+## Production environment
+
+Run the following command to build the Docker image:
+```bash
+docker build -f Dockerfile.prod -t products-ms .
+```
+
 ## Installation
 
 ```bash
